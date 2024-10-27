@@ -8,8 +8,8 @@ To use the app, **first** open one of our course planning spreadsheets: [ANTH](h
 
 **Second**, select all the cells for one sheet (e.g. the sheet for the current year), and copy them to your clipboard (e.g. press CTRL + c or CMD + c to copy). It does not matter if you have selected empty cells.
 
-**Third**, paste the cells you've copied into the box on the left sid of the app.
+**Third**, paste the cells you've copied into the box on the left side of the app.
 
-**Fourth**, click the 'Submit' button on the app, and plots should appear to the right, as shown in the screenshot below.
+**Fourth**, click the 'Submit' button on the app, and plots should appear to the right, as shown in the screenshot below. The app will not show courses that have cell values in non-standard formats, i.e. anything that differs from what's the screenshot above.
 
 ![](screenshot1.png)

@@ -116,8 +116,8 @@ ui <- fluidPage(
           "Fourth, click the 'Submit' button and plots should appear to the right.",
           tags$p(), 
          "The source code for this app is freely available at",
-          tags$a("https://github.com/benmarwick/uw-anthro-curriculum", 
-                 href = "https://github.com/benmarwick/uw-anthro-curriculum",
+          tags$a("https://github.com/benmarwick/uw-anthro-course-viz", 
+                 href = "https://github.com/benmarwick/uw-anthro-course-viz",
                  target="_blank"),"."
         )),
       textAreaInput("dataInput", 
