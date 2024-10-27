@@ -1,47 +1,67 @@
 library(shiny)
+library(dplyr)
+library(tidyr)
 library(ggplot2)
-library(readr)
+library(shadowtext)
+library(stringr)
+
 
 # functions we need in the server --------------------------------------
 
-format_time_label <- function(x) {
-  hour(x)
-}
-
-new_names <- c( "Course" = "Course #" )
 
 get_the_quarter_fn <- function(input_df, 
                                quarter = "AU"){
+  
+  new_names <- c( "Course" = "Course.." )
+  
   input_df %>% 
     filter(Quarter == quarter) %>% 
+    # drop rows with no times
+    filter(!is.na(Time.Start)) %>% 
+    # drop empty rows
+    filter(!Time.Start == "") %>% 
+    rename(any_of(new_names)) %>% 
     select(Course,
            Title,
            Mon:Fri, 
-           `Time Start`,
-           `Time End`,
+           Time.Start,
+           Time.End,
            Quarter, 
            Prefix) %>% 
     pivot_longer(cols = Mon:Fri,
                  names_to = "day") %>% 
     drop_na(value) %>% 
+    # drop empty rows
+    filter(!value == "") %>% 
     mutate(day = factor(day, c("Mon", "Tue", "Wed", "Thu", "Fri"))) %>% 
     mutate(crse1 = str_sub(Course, 1,1),
            crse2 = str_sub(Course, 2,3),
            Course = factor(Course)) %>% 
     group_by(crse1, crse2) %>% 
-    filter(crse1 == min(crse1))  
+    filter(crse1 == min(crse1))  %>% 
+    # convert times to a format R knows  <dttm>
+    mutate(Time.Start = as.POSIXct(strptime(Time.Start, format = "%I:%M:%S %p")),
+           Time.End =   as.POSIXct(strptime(Time.End,   format = "%I:%M:%S %p")))  
 }
 
 plot_the_schedule_fn <- function(quarter,
                               dodge_width = 0.5){
+  
+  # Define start and end times for shading 
+  start_time <- as.POSIXct( paste(Sys.Date(), "08:00:00") )
+  end_time <-   as.POSIXct( paste(Sys.Date(), "17:00:00") )
+  
+  # draw plot
   ggplot(quarter, 
-         aes(xmin   = `Time Start`, 
-             xmax   = `Time End`, 
+         aes(xmin   = Time.Start, 
+             xmax   = Time.End, 
              y      = day,
              label = Title)) +
+    scale_x_datetime(date_breaks = "1 hour",
+                     date_labels = "%H") +
     annotate("rect",
-             xmin =  parse_date_time("8:30:00 AM", '%I:%M:%S %p'),
-             xmax =  parse_date_time("6:00:00 PM", '%I:%M:%S %p'),
+             xmin =  start_time,
+             xmax =  end_time,
              ymax = c(0.5, 2.5, 4.5),
              ymin = c(1.5, 3.5, 5.5),
              fill = "grey80",
@@ -50,7 +70,7 @@ plot_the_schedule_fn <- function(quarter,
                    position = position_dodge(width = dodge_width), 
                    size = 3) + 
     geom_shadowtext(aes(label = Course,
-                        x = `Time Start`,
+                        x = Time.Start,
                         group = Course),
                     position = position_dodge2(width = dodge_width),
                     size = 3,
@@ -59,9 +79,6 @@ plot_the_schedule_fn <- function(quarter,
     scale_y_discrete(breaks = c("Mon", "Tue", "Wed", "Thu", "Fri"),
                      labels = c("Mon", "Tue", "Wed", "Thu", "Fri"),
                      drop=FALSE) +
-    scale_x_datetime(date_breaks = "1 hour", 
-                     labels = format_time_label
-    ) +
     labs(x = "Time of day",
          y = "") +
     theme_minimal() +
@@ -109,7 +126,14 @@ ui <- fluidPage(
     mainPanel(
       plotOutput("plot1"),
       plotOutput("plot2"),
-      plotOutput("plot3")
+      plotOutput("plot3"),
+      hr(),
+      tags$p(),
+      tags$p(
+        "Here is the data that was pasted in from the spreadsheet:"
+        ),
+      tags$p(),
+      DT::dataTableOutput("coursetable")
     )
   )
 )
@@ -120,13 +144,19 @@ server <- function(input, output) {
   
   # get the data
   dataInput <- eventReactive(input$submit, {
-    read_delim(I(input$dataInput)) %>% 
-      # drop rows with no times
-      filter(!is.na(`Time Start`)) %>% 
-      # convert times to a format R knows  <dttm>
-      mutate(`Time Start` = parse_date_time(`Time Start`, orders = "HMS"),
-             `Time End` =   parse_date_time(`Time End`, orders = "HMS")) %>% 
-      rename(any_of(new_names))
+    
+    tryCatch(
+      {
+        df <- read.delim(text = I(input$dataInput), 
+                           sep = "\t",
+                           header = TRUE)
+        df
+      },
+      error = function(e) {
+        showNotification("Error in data loading: Check your data format.", type = "error")
+        NULL
+      }
+    )
   })
   
   output$plot1 <- renderPlot({
@@ -150,6 +180,12 @@ server <- function(input, output) {
     }
   })
   
+  output$coursetable = DT::renderDataTable({
+    if (!is.null(dataInput())) {
+    dataInput()
+    }
+  })
+  
 }
 
 shinyApp(ui = ui, server = server)
@@ -164,5 +200,7 @@ shinyApp(ui = ui, server = server)
 # usethis::use_github_action(url="https://github.com/posit-dev/r-shinylive/blob/actions-v1/examples/deploy-app.yaml")
 
 # https://benmarwick.github.io/uw-anthro-course-viz
+
+# to debug in the browser, inspect and view console
 
 
