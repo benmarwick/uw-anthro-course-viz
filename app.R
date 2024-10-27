@@ -155,7 +155,7 @@ server <- function(input, output) {
 shinyApp(ui = ui, server = server)
 
 
-# shinylive steps
+# shinylive steps from https://posit-dev.github.io/r-shinylive/
 
 # generate site
 # shinylive::export(".", "site")
