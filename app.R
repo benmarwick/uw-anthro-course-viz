@@ -158,11 +158,11 @@ shinyApp(ui = ui, server = server)
 # shinylive steps from https://posit-dev.github.io/r-shinylive/
 
 # generate site
-# shinylive::export(".", "site")
+# shinylive::export(".", "docs")
 
 # deploy as github pages
 # usethis::use_github_action(url="https://github.com/posit-dev/r-shinylive/blob/actions-v1/examples/deploy-app.yaml")
 
-
+# https://benmarwick.github.io/uw-anthro-course-viz
 
 
